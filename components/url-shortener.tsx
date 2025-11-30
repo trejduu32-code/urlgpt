@@ -15,6 +15,7 @@ interface ShortenedUrl {
   shortCode: string
   createdAt: Date
   isCustom?: boolean
+  expiresAt: number // Added expiresAt field
 }
 
 export function UrlShortener() {
@@ -79,6 +80,7 @@ export function UrlShortener() {
         shortCode: data.shortCode,
         createdAt: new Date(),
         isCustom: !!customSlug.trim(),
+        expiresAt: data.expiresAt,
       }
 
       setShortenedUrls((prev) => [newShortenedUrl, ...prev])
@@ -146,6 +148,7 @@ export function UrlShortener() {
             </Button>
           </form>
           {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+          <p className="mt-3 text-xs text-muted-foreground text-center">Links expire after 24 hours</p>
         </CardContent>
       </Card>
 
@@ -162,6 +165,7 @@ export function UrlShortener() {
                 originalUrl={item.originalUrl}
                 onDelete={() => handleDelete(item.id)}
                 isCustom={item.isCustom}
+                expiresAt={item.expiresAt}
               />
             ))}
           </div>

@@ -81,9 +81,12 @@ export async function POST(request: Request) {
 
   await saveUrl(shortCode, urlToShorten)
 
+  const expiresAt = Date.now() + 24 * 60 * 60 * 1000
+
   return NextResponse.json({
     id: crypto.randomUUID(),
     shortCode,
     originalUrl: urlToShorten,
+    expiresAt,
   })
 }

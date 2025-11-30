@@ -3,12 +3,12 @@ import { getUrl } from "@/lib/url-store"
 
 export async function GET(request: Request, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
-  const originalUrl = await getUrl(code)
+  const urlData = await getUrl(code)
 
-  if (originalUrl) {
-    redirect(originalUrl)
+  if (urlData && urlData.url) {
+    redirect(urlData.url)
   }
 
-  // If URL not found, redirect to home page
+  // If URL not found or expired, redirect to home page
   redirect("/")
 }
