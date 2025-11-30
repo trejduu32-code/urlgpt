@@ -14,7 +14,7 @@ interface ShortenedUrlCardProps {
 
 export function ShortenedUrlCard({ shortCode, originalUrl, onDelete, isCustom }: ShortenedUrlCardProps) {
   const [copied, setCopied] = useState(false)
-  const shortUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/s/${shortCode}`
+  const shortUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${shortCode}`
 
   const handleCopy = async () => {
     try {
