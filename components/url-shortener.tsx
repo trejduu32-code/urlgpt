@@ -2,29 +2,40 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
-import { ShortenedUrlCard } from "@/components/shortened-url-card"
-import { LinkIcon, Loader2, Sparkles } from "lucide-react"
+import { Card } from "@/components/ui/card"
+import { Copy, ExternalLink, Trash2, Clock, Sparkles, Check } from "lucide-react"
 
 interface ShortenedUrl {
   id: string
-  originalUrl: string
   shortCode: string
-  createdAt: Date
-  isCustom?: boolean
+  originalUrl: string
   expiresAt: number
+  isCustomSlug?: boolean
 }
 
-export function UrlShortener() {
+export function URLShortener() {
   const [url, setUrl] = useState("")
   const [customSlug, setCustomSlug] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [links, setLinks] = useState<ShortenedUrl[]>([])
   const [error, setError] = useState("")
-  const [shortenedUrls, setShortenedUrls] = useState<ShortenedUrl[]>([])
+  const [loading, setLoading] = useState(false)
   const [customSlugUsed, setCustomSlugUsed] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const stored = localStorage.getItem("urlgpt_links")
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      const now = Date.now()
+      const valid = parsed.filter((link: ShortenedUrl) => link.expiresAt > now)
+      setLinks(valid)
+      localStorage.setItem("urlgpt_links", JSON.stringify(valid))
+    }
+    setCustomSlugUsed(localStorage.getItem("customSlugUsed") === "true")
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,157 +46,246 @@ export function UrlShortener() {
       return
     }
 
-    if (shortenedUrls.length >= 11) {
-      setError("Maximum 11 links allowed. Please delete a link to add more.")
+    if (links.length >= 11) {
+      setError("Maximum 11 links reached. Delete a link to add more.")
       return
     }
 
-    if (customSlug.trim()) {
-      if (!/^[a-zA-Z0-9_-]+$/.test(customSlug)) {
-        setError("Custom slug can only contain letters, numbers, hyphens, and underscores")
-        return
-      }
-      if (customSlug.length < 2 || customSlug.length > 20) {
-        setError("Custom slug must be 2-20 characters")
-        return
-      }
+    if (customSlug && customSlugUsed) {
+      setError("You have already used your 1 free custom slug")
+      return
     }
 
-    setIsLoading(true)
+    setLoading(true)
 
     try {
       const response = await fetch("/api/shorten", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url,
-          customSlug: customSlug.trim() || undefined,
-        }),
+        body: JSON.stringify({ url, customSlug: customSlug || undefined }),
       })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || "Failed to shorten URL")
-      }
 
       const data = await response.json()
 
-      if (customSlug.trim()) {
-        setCustomSlugUsed(true)
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to shorten URL")
       }
 
-      const newShortenedUrl: ShortenedUrl = {
+      const newLink: ShortenedUrl = {
         id: data.id,
-        originalUrl: data.originalUrl,
         shortCode: data.shortCode,
-        createdAt: new Date(),
-        isCustom: !!customSlug.trim(),
+        originalUrl: data.originalUrl,
         expiresAt: data.expiresAt,
+        isCustomSlug: data.isCustomSlug,
       }
 
-      setShortenedUrls((prev) => [newShortenedUrl, ...prev])
+      const updated = [newLink, ...links]
+      setLinks(updated)
+      localStorage.setItem("urlgpt_links", JSON.stringify(updated))
+
+      if (data.isCustomSlug) {
+        setCustomSlugUsed(true)
+        localStorage.setItem("customSlugUsed", "true")
+      }
+
       setUrl("")
       setCustomSlug("")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to shorten URL")
+      setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  const handleDelete = async (id: string, shortCode: string, isCustom?: boolean) => {
+  const deleteLink = async (id: string, shortCode: string) => {
+    const link = links.find((l) => l.id === id)
+
     try {
-      await fetch(`/api/shorten?code=${shortCode}`, {
-        method: "DELETE",
-      })
-
-      setShortenedUrls((prev) => prev.filter((item) => item.id !== id))
-
-      // Reset custom slug allowance if this was a custom slug
-      if (isCustom) {
-        setCustomSlugUsed(false)
-      }
-    } catch (err) {
-      console.error("Failed to delete:", err)
-      // Still remove from UI even if API fails
-      setShortenedUrls((prev) => prev.filter((item) => item.id !== id))
+      await fetch(`/api/shorten?code=${shortCode}`, { method: "DELETE" })
+    } catch (e) {
+      console.error("Failed to delete:", e)
     }
+
+    if (link?.isCustomSlug) {
+      setCustomSlugUsed(false)
+      localStorage.setItem("customSlugUsed", "false")
+    }
+
+    const updated = links.filter((l) => l.id !== id)
+    setLinks(updated)
+    localStorage.setItem("urlgpt_links", JSON.stringify(updated))
+  }
+
+  const copyLink = async (shortCode: string, id: string) => {
+    const shortUrl = `${window.location.origin}/${shortCode}`
+    await navigator.clipboard.writeText(shortUrl)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="border-border bg-card">
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="relative flex-1">
-              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Enter your long URL here..."
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className="pl-10 h-12 bg-input border-border text-foreground placeholder:text-muted-foreground"
-              />
+    <>
+      <Card className="bg-[#18181b] border-[#27272a] p-6 mb-6">
+        <form onSubmit={handleSubmit}>
+          {error && (
+            <div className="bg-[#7f1d1d] border border-[#dc2626] text-[#fca5a5] p-3 rounded-lg mb-4 text-sm">
+              {error}
             </div>
+          )}
 
-            <div className="relative flex-1">
-              <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder={
-                  customSlugUsed ? "Custom slug already used (1 per person)" : "Custom slug (optional) e.g. 'my-link'"
-                }
-                value={customSlug}
-                onChange={(e) => setCustomSlug(e.target.value)}
-                disabled={customSlugUsed}
-                className="pl-10 h-12 bg-input border-border text-foreground placeholder:text-muted-foreground disabled:opacity-50"
-              />
-              {!customSlugUsed && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                  1 free custom slug
-                </span>
-              )}
-            </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-[#a1a1aa] mb-2">Enter URL to shorten</label>
+            <Input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://example.com/very/long/url"
+              className="bg-[#27272a] border-[#3f3f46] text-[#fafafa] placeholder:text-[#71717a] focus:border-[#22c55e] focus:ring-[#22c55e]/10"
+            />
+          </div>
 
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="h-12 px-8 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Shortening...
-                </>
-              ) : (
-                "Shorten URL"
-              )}
-            </Button>
-          </form>
-          {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
-          <p className="mt-3 text-xs text-muted-foreground text-center">Links expire after 24 hours</p>
-        </CardContent>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-[#a1a1aa] mb-2">
+              Custom slug (optional)
+              <span
+                className={`inline-flex items-center gap-1 text-xs ml-2 ${customSlugUsed ? "text-[#71717a]" : "text-[#facc15]"}`}
+              >
+                <Sparkles className="w-3 h-3" />
+                {customSlugUsed ? "Used" : "1 free"}
+              </span>
+            </label>
+            <Input
+              type="text"
+              value={customSlug}
+              onChange={(e) => setCustomSlug(e.target.value)}
+              placeholder={customSlugUsed ? "Custom slug already used" : "my-custom-link"}
+              maxLength={20}
+              disabled={customSlugUsed}
+              className="bg-[#27272a] border-[#3f3f46] text-[#fafafa] placeholder:text-[#71717a] focus:border-[#22c55e] focus:ring-[#22c55e]/10 disabled:opacity-50"
+            />
+            <p className="text-xs text-[#71717a] mt-1">2-20 characters, letters, numbers, hyphens, underscores only</p>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#22c55e] hover:bg-[#16a34a] text-[#0a0a0a] font-semibold"
+          >
+            {loading ? "Shortening..." : "Shorten URL"}
+          </Button>
+
+          <p className="text-center text-xs text-[#71717a] mt-4">Links expire after 24 hours</p>
+        </form>
       </Card>
 
-      {shortenedUrls.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Recent Links ({shortenedUrls.length}/11)
-          </h2>
-          <div className="space-y-3">
-            {shortenedUrls.map((item) => (
-              <ShortenedUrlCard
-                key={item.id}
-                shortCode={item.shortCode}
-                originalUrl={item.originalUrl}
-                onDelete={() => handleDelete(item.id, item.shortCode, item.isCustom)}
-                isCustom={item.isCustom}
-                expiresAt={item.expiresAt}
+      {links.length > 0 && (
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">Your Links</h2>
+            <span className="text-xs text-[#71717a] bg-[#27272a] px-3 py-1 rounded-full">{links.length} / 11</span>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {links.map((link) => (
+              <LinkCard
+                key={link.id}
+                link={link}
+                onDelete={() => deleteLink(link.id, link.shortCode)}
+                onCopy={() => copyLink(link.shortCode, link.id)}
+                copied={copiedId === link.id}
               />
             ))}
           </div>
         </div>
       )}
+    </>
+  )
+}
+
+function LinkCard({
+  link,
+  onDelete,
+  onCopy,
+  copied,
+}: {
+  link: ShortenedUrl
+  onDelete: () => void
+  onCopy: () => void
+  copied: boolean
+}) {
+  const [countdown, setCountdown] = useState("")
+  const [expired, setExpired] = useState(false)
+
+  useEffect(() => {
+    const update = () => {
+      const remaining = link.expiresAt - Date.now()
+      if (remaining <= 0) {
+        setCountdown("Expired")
+        setExpired(true)
+        setTimeout(onDelete, 2000)
+        return
+      }
+
+      const hours = Math.floor(remaining / (1000 * 60 * 60))
+      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((remaining % (1000 * 60)) / 1000)
+      setCountdown(
+        `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`,
+      )
+    }
+
+    update()
+    const interval = setInterval(update, 1000)
+    return () => clearInterval(interval)
+  }, [link.expiresAt, onDelete])
+
+  const shortUrl = typeof window !== "undefined" ? `${window.location.origin}/${link.shortCode}` : `/${link.shortCode}`
+
+  return (
+    <div
+      className={`bg-[#27272a] border rounded-lg p-4 ${
+        link.isCustomSlug ? "border-[#854d0e] bg-gradient-to-r from-[#27272a] to-[#1c1a17]" : "border-[#3f3f46]"
+      }`}
+    >
+      <div className="flex justify-between items-start gap-2 mb-2">
+        <div className="font-mono text-sm text-[#4ade80] break-all flex items-center gap-2">
+          {shortUrl}
+          {link.isCustomSlug && <Sparkles className="w-4 h-4 text-[#facc15]" />}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onCopy}
+            className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${
+              copied
+                ? "bg-[#166534] text-[#4ade80]"
+                : "bg-[#3f3f46] text-[#a1a1aa] hover:bg-[#52525b] hover:text-[#fafafa]"
+            }`}
+          >
+            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          </button>
+          <a
+            href={link.originalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-8 h-8 flex items-center justify-center rounded-md bg-[#3f3f46] text-[#a1a1aa] hover:bg-[#52525b] hover:text-[#fafafa] transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          <button
+            onClick={onDelete}
+            className="w-8 h-8 flex items-center justify-center rounded-md bg-[#3f3f46] text-[#a1a1aa] hover:bg-[#7f1d1d] hover:text-[#fca5a5] transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <p className="text-xs text-[#71717a] break-all mb-2">{link.originalUrl}</p>
+
+      <div className={`text-xs flex items-center gap-1 ${expired ? "text-[#ef4444] animate-pulse" : "text-[#a1a1aa]"}`}>
+        <Clock className="w-3 h-3" />
+        {countdown}
+      </div>
     </div>
   )
 }

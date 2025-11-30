@@ -23,25 +23,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
             align-items: center;
             justify-content: center;
           }
-          .container {
-            text-align: center;
-            padding: 2rem;
-          }
-          .error-code {
-            font-size: 6rem;
-            font-weight: 700;
-            color: #ef4444;
-            line-height: 1;
-          }
-          h1 {
-            font-size: 1.5rem;
-            margin: 1rem 0;
-            color: #fafafa;
-          }
-          p {
-            color: #a1a1aa;
-            margin-bottom: 2rem;
-          }
+          .container { text-align: center; padding: 2rem; }
+          .error-code { font-size: 6rem; font-weight: 700; color: #ef4444; line-height: 1; }
+          h1 { font-size: 1.5rem; margin: 1rem 0; color: #fafafa; }
+          p { color: #a1a1aa; margin-bottom: 2rem; }
           a {
             display: inline-block;
             background: #22c55e;
@@ -53,12 +38,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
             transition: background 0.2s;
           }
           a:hover { background: #16a34a; }
-          .slug { 
-            font-family: monospace; 
-            background: #27272a; 
-            padding: 0.25rem 0.5rem; 
-            border-radius: 0.25rem;
-          }
+          .slug { font-family: monospace; background: #27272a; padding: 0.25rem 0.5rem; border-radius: 0.25rem; }
         </style>
       </head>
       <body>
@@ -70,13 +50,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
         </div>
       </body>
       </html>`,
-      {
-        status: 404,
-        headers: { "Content-Type": "text/html" },
-      },
+      { status: 404, headers: { "Content-Type": "text/html" } },
     )
   }
 
-  // Redirect to the original URL
   return Response.redirect(urlData.url, 302)
 }

@@ -1,14 +1,16 @@
-import { UrlShortener } from "@/components/url-shortener"
+import { URLShortener } from "@/components/url-shortener"
 
-export default function Home() {
+export default function Page() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-2xl space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight text-balance">URL Shortener</h1>
-          <p className="text-muted-foreground text-lg">Transform long URLs into short, shareable links instantly.</p>
-        </div>
-        <UrlShortener />
+    <main className="min-h-screen bg-[#0a0a0a] text-[#fafafa] flex flex-col items-center p-4 md:p-8">
+      <div className="w-full max-w-[600px]">
+        <header className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#22c55e] to-[#4ade80] bg-clip-text text-transparent">
+            URLGPT
+          </h1>
+          <p className="text-[#71717a] text-sm mt-1">by ExploitZ3r0</p>
+        </header>
+        <URLShortener />
       </div>
     </main>
   )

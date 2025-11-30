@@ -54,9 +54,7 @@ export async function POST(request: Request) {
   if (customSlug && typeof customSlug === "string") {
     if (!isValidSlug(customSlug)) {
       return NextResponse.json(
-        {
-          error: "Custom slug must be 2-20 characters and contain only letters, numbers, hyphens, and underscores",
-        },
+        { error: "Custom slug must be 2-20 characters and contain only letters, numbers, hyphens, and underscores" },
         { status: 400 },
       )
     }
@@ -72,7 +70,6 @@ export async function POST(request: Request) {
     }
 
     shortCode = customSlug
-
     await saveUrl(shortCode, urlToShorten, true, userIdentifier)
     await markCustomSlugUsed(userIdentifier)
   } else {
@@ -100,6 +97,5 @@ export async function DELETE(request: Request) {
   }
 
   await deleteUrl(code)
-
   return NextResponse.json({ success: true })
 }
