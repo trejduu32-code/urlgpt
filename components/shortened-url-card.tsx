@@ -13,7 +13,7 @@ interface ShortenedUrlCardProps {
   expiresAt: number
 }
 
-function Countdown({ expiresAt }: { expiresAt: number }) {
+function Countdown({ expiresAt, onExpire }: { expiresAt: number; onExpire: () => void }) {
   const [timeLeft, setTimeLeft] = useState<string>("")
   const [isExpired, setIsExpired] = useState(false)
 
@@ -25,6 +25,9 @@ function Countdown({ expiresAt }: { expiresAt: number }) {
       if (diff <= 0) {
         setIsExpired(true)
         setTimeLeft("Expired")
+        setTimeout(() => {
+          onExpire()
+        }, 2000)
         return
       }
 
@@ -41,11 +44,11 @@ function Countdown({ expiresAt }: { expiresAt: number }) {
     const interval = setInterval(updateCountdown, 1000)
 
     return () => clearInterval(interval)
-  }, [expiresAt])
+  }, [expiresAt, onExpire])
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-mono ${isExpired ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground"}`}
+      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-mono ${isExpired ? "bg-destructive/20 text-destructive animate-pulse" : "bg-muted text-muted-foreground"}`}
     >
       <Clock className="h-3 w-3" />
       {timeLeft}
@@ -79,7 +82,7 @@ export function ShortenedUrlCard({ shortCode, originalUrl, onDelete, isCustom, e
                   Custom
                 </span>
               )}
-              <Countdown expiresAt={expiresAt} />
+              <Countdown expiresAt={expiresAt} onExpire={onDelete} />
               <a
                 href={shortUrl}
                 target="_blank"
