@@ -15,7 +15,7 @@ interface ShortenedUrl {
   shortCode: string
   createdAt: Date
   isCustom?: boolean
-  expiresAt: number // Added expiresAt field
+  expiresAt: number
 }
 
 export function UrlShortener() {
@@ -93,8 +93,23 @@ export function UrlShortener() {
     }
   }
 
-  const handleDelete = (id: string) => {
-    setShortenedUrls((prev) => prev.filter((item) => item.id !== id))
+  const handleDelete = async (id: string, shortCode: string, isCustom?: boolean) => {
+    try {
+      await fetch(`/api/shorten?code=${shortCode}`, {
+        method: "DELETE",
+      })
+
+      setShortenedUrls((prev) => prev.filter((item) => item.id !== id))
+
+      // Reset custom slug allowance if this was a custom slug
+      if (isCustom) {
+        setCustomSlugUsed(false)
+      }
+    } catch (err) {
+      console.error("Failed to delete:", err)
+      // Still remove from UI even if API fails
+      setShortenedUrls((prev) => prev.filter((item) => item.id !== id))
+    }
   }
 
   return (
@@ -163,7 +178,7 @@ export function UrlShortener() {
                 key={item.id}
                 shortCode={item.shortCode}
                 originalUrl={item.originalUrl}
-                onDelete={() => handleDelete(item.id)}
+                onDelete={() => handleDelete(item.id, item.shortCode, item.isCustom)}
                 isCustom={item.isCustom}
                 expiresAt={item.expiresAt}
               />

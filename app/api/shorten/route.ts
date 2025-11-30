@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { headers } from "next/headers"
-import { saveUrl, getUrl, hasUsedCustomSlug, markCustomSlugUsed } from "@/lib/url-store"
+import { saveUrl, getUrl, deleteUrl, hasUsedCustomSlug, markCustomSlugUsed } from "@/lib/url-store"
 
 function generateShortCode() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -49,6 +49,7 @@ export async function POST(request: Request) {
   }
 
   let shortCode: string
+  const userIdentifier = await getUserIdentifier()
 
   if (customSlug && typeof customSlug === "string") {
     if (!isValidSlug(customSlug)) {
@@ -60,13 +61,11 @@ export async function POST(request: Request) {
       )
     }
 
-    const userIdentifier = await getUserIdentifier()
     const alreadyUsed = await hasUsedCustomSlug(userIdentifier)
     if (alreadyUsed) {
       return NextResponse.json({ error: "You have already used your 1 free custom slug" }, { status: 403 })
     }
 
-    // Check if custom slug is already taken
     const existingUrl = await getUrl(customSlug)
     if (existingUrl) {
       return NextResponse.json({ error: "This custom slug is already taken" }, { status: 409 })
@@ -74,12 +73,12 @@ export async function POST(request: Request) {
 
     shortCode = customSlug
 
+    await saveUrl(shortCode, urlToShorten, true, userIdentifier)
     await markCustomSlugUsed(userIdentifier)
   } else {
     shortCode = generateShortCode()
+    await saveUrl(shortCode, urlToShorten, false)
   }
-
-  await saveUrl(shortCode, urlToShorten)
 
   const expiresAt = Date.now() + 24 * 60 * 60 * 1000
 
@@ -88,5 +87,19 @@ export async function POST(request: Request) {
     shortCode,
     originalUrl: urlToShorten,
     expiresAt,
+    isCustomSlug: !!customSlug,
   })
+}
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const code = searchParams.get("code")
+
+  if (!code) {
+    return NextResponse.json({ error: "Code is required" }, { status: 400 })
+  }
+
+  await deleteUrl(code)
+
+  return NextResponse.json({ success: true })
 }
