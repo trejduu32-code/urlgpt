@@ -7,38 +7,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { ShortenedUrlCard } from "@/components/shortened-url-card"
-import { LinkIcon, Loader2 } from "lucide-react"
+import { LinkIcon, Loader2, Sparkles } from "lucide-react"
 
 interface ShortenedUrl {
   id: string
   originalUrl: string
   shortCode: string
   createdAt: Date
+  isCustom?: boolean
 }
 
 export function UrlShortener() {
   const [url, setUrl] = useState("")
+  const [customSlug, setCustomSlug] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [shortenedUrls, setShortenedUrls] = useState<ShortenedUrl[]>([])
-
-  const isValidUrl = (string: string) => {
-    try {
-      new URL(string)
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  const generateShortCode = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-    let result = ""
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    return result
-  }
+  const [customSlugUsed, setCustomSlugUsed] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,13 +34,32 @@ export function UrlShortener() {
       return
     }
 
+    if (shortenedUrls.length >= 11) {
+      setError("Maximum 11 links allowed. Please delete a link to add more.")
+      return
+    }
+
+    if (customSlug.trim()) {
+      if (!/^[a-zA-Z0-9_-]+$/.test(customSlug)) {
+        setError("Custom slug can only contain letters, numbers, hyphens, and underscores")
+        return
+      }
+      if (customSlug.length < 2 || customSlug.length > 20) {
+        setError("Custom slug must be 2-20 characters")
+        return
+      }
+    }
+
     setIsLoading(true)
 
     try {
       const response = await fetch("/api/shorten", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({
+          url,
+          customSlug: customSlug.trim() || undefined,
+        }),
       })
 
       if (!response.ok) {
@@ -65,15 +69,21 @@ export function UrlShortener() {
 
       const data = await response.json()
 
+      if (customSlug.trim()) {
+        setCustomSlugUsed(true)
+      }
+
       const newShortenedUrl: ShortenedUrl = {
         id: data.id,
         originalUrl: data.originalUrl,
         shortCode: data.shortCode,
         createdAt: new Date(),
+        isCustom: !!customSlug.trim(),
       }
 
       setShortenedUrls((prev) => [newShortenedUrl, ...prev])
       setUrl("")
+      setCustomSlug("")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to shorten URL")
     } finally {
@@ -89,7 +99,7 @@ export function UrlShortener() {
     <div className="space-y-6">
       <Card className="border-border bg-card">
         <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:flex-row">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="relative flex-1">
               <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -100,6 +110,26 @@ export function UrlShortener() {
                 className="pl-10 h-12 bg-input border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
+
+            <div className="relative flex-1">
+              <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder={
+                  customSlugUsed ? "Custom slug already used (1 per person)" : "Custom slug (optional) e.g. 'my-link'"
+                }
+                value={customSlug}
+                onChange={(e) => setCustomSlug(e.target.value)}
+                disabled={customSlugUsed}
+                className="pl-10 h-12 bg-input border-border text-foreground placeholder:text-muted-foreground disabled:opacity-50"
+              />
+              {!customSlugUsed && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  1 free custom slug
+                </span>
+              )}
+            </div>
+
             <Button
               type="submit"
               disabled={isLoading}
@@ -121,7 +151,9 @@ export function UrlShortener() {
 
       {shortenedUrls.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Recent Links</h2>
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            Recent Links ({shortenedUrls.length}/11)
+          </h2>
           <div className="space-y-3">
             {shortenedUrls.map((item) => (
               <ShortenedUrlCard
@@ -129,6 +161,7 @@ export function UrlShortener() {
                 shortCode={item.shortCode}
                 originalUrl={item.originalUrl}
                 onDelete={() => handleDelete(item.id)}
+                isCustom={item.isCustom}
               />
             ))}
           </div>

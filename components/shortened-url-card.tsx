@@ -3,15 +3,16 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Check, Copy, ExternalLink, Trash2 } from "lucide-react"
+import { Check, Copy, ExternalLink, Trash2, Sparkles } from "lucide-react"
 
 interface ShortenedUrlCardProps {
   shortCode: string
   originalUrl: string
   onDelete: () => void
+  isCustom?: boolean
 }
 
-export function ShortenedUrlCard({ shortCode, originalUrl, onDelete }: ShortenedUrlCardProps) {
+export function ShortenedUrlCard({ shortCode, originalUrl, onDelete, isCustom }: ShortenedUrlCardProps) {
   const [copied, setCopied] = useState(false)
   const shortUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/s/${shortCode}`
 
@@ -31,6 +32,12 @@ export function ShortenedUrlCard({ shortCode, originalUrl, onDelete }: Shortened
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex-1 min-w-0 space-y-1">
             <div className="flex items-center gap-2">
+              {isCustom && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium">
+                  <Sparkles className="h-3 w-3" />
+                  Custom
+                </span>
+              )}
               <a
                 href={shortUrl}
                 target="_blank"
