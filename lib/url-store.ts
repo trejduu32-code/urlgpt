@@ -46,7 +46,7 @@ export async function hasUsedCustomSlug(userIdentifier: string): Promise<boolean
 }
 
 export async function markCustomSlugUsed(userIdentifier: string) {
-  await redis.set(`${CUSTOM_SLUG_PREFIX}${userIdentifier}`, "true", { ex: URL_TTL_SECONDS })
+  await redis.set(`${CUSTOM_SLUG_PREFIX}${userIdentifier}`, "true")
 }
 
 export async function resetCustomSlugUsed(userIdentifier: string) {
