@@ -16,7 +16,7 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "lucide-react": "^0.454.0",
-    "next": "16.0.5",
+    "next": "16.0.7",
     "next-themes": "latest",
     "path": "0.12.7",
     "react": "19.2.0",
