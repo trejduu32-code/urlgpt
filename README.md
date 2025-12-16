@@ -50,34 +50,34 @@ Get these from your [Upstash Console](https://console.upstash.com/) after creati
 ### Steps
 
 1. **Clone the repository**
-   \`\`\`bash
+   ```bash
    git clone https://github.com/yourusername/urlgpt.git
    cd urlgpt
-   \`\`\`
+   ```
 
 2. **Install dependencies**
-   \`\`\`bash
+   ```bash
    npm install
    # or
    yarn install
    # or
    pnpm install
-   \`\`\`
+   ```
 
 3. **Set up environment variables**
-   \`\`\`bash
+   ```bash
    cp .env.example .env.local
-   \`\`\`
+   ```
    Edit `.env.local` and add your Upstash credentials:
-   \`\`\`env
+   ```env
    KV_REST_API_URL=https://your-redis-url.upstash.io
    KV_REST_API_TOKEN=your-token-here
-   \`\`\`
+   ```
 
 4. **Run the development server**
-   \`\`\`bash
+   ```bash
    npm run dev
-   \`\`\`
+   ```
 
 5. **Open the app**
    Navigate to [http://localhost:3000](http://localhost:3000)
@@ -100,7 +100,7 @@ Get these from your [Upstash Console](https://console.upstash.com/) after creati
 
 #### Option 2: CLI Deployment
 
-\`\`\`bash
+```bash
 # Install Vercel CLI
 npm i -g vercel
 
@@ -116,7 +116,7 @@ vercel env add KV_REST_API_TOKEN
 
 # Deploy to production
 vercel --prod
-\`\`\`
+```
 
 ---
 
@@ -140,7 +140,7 @@ vercel --prod
 #### Option 2: Using render.yaml (Blueprint)
 
 1. Ensure `render.yaml` exists in your repo root:
-   \`\`\`yaml
+   ```yaml
    services:
      - type: web
        name: urlgpt
@@ -152,7 +152,7 @@ vercel --prod
            sync: false
          - key: KV_REST_API_TOKEN
            sync: false
-   \`\`\`
+   ```
 2. Go to Render Dashboard → **"Blueprints"**
 3. Connect your repo and deploy
 
@@ -178,7 +178,7 @@ vercel --prod
 
 #### Option 2: CLI Deployment
 
-\`\`\`bash
+```bash
 # Install Wrangler CLI
 npm i -g wrangler
 
@@ -194,7 +194,7 @@ wrangler pages deploy .vercel/output/static --project-name=urlgpt
 # Set secrets
 wrangler pages secret put KV_REST_API_URL --project-name=urlgpt
 wrangler pages secret put KV_REST_API_TOKEN --project-name=urlgpt
-\`\`\`
+```
 
 ---
 
@@ -207,30 +207,30 @@ wrangler pages secret put KV_REST_API_TOKEN --project-name=urlgpt
 #### Steps
 
 1. **Login to Fly.io**
-   \`\`\`bash
+   ```bash
    flyctl auth login
-   \`\`\`
+   ```
 
 2. **Launch the app**
-   \`\`\`bash
+   ```bash
    flyctl launch
-   \`\`\`
+   ```
    Follow the prompts to configure your app.
 
 3. **Set environment variables**
-   \`\`\`bash
+   ```bash
    flyctl secrets set KV_REST_API_URL=https://your-redis-url.upstash.io
    flyctl secrets set KV_REST_API_TOKEN=your-token-here
-   \`\`\`
+   ```
 
 4. **Deploy**
-   \`\`\`bash
+   ```bash
    flyctl deploy
-   \`\`\`
+   ```
 
 #### fly.toml Configuration
 
-\`\`\`toml
+```toml
 app = "urlgpt"
 primary_region = "iad"
 
@@ -251,7 +251,7 @@ primary_region = "iad"
   cpu_kind = "shared"
   cpus = 1
   memory_mb = 256
-\`\`\`
+```
 
 ---
 
@@ -270,7 +270,7 @@ primary_region = "iad"
 
 #### Option 2: CLI Deployment
 
-\`\`\`bash
+```bash
 # Install Railway CLI
 npm i -g @railway/cli
 
@@ -289,7 +289,7 @@ railway variables set KV_REST_API_TOKEN=your-token-here
 
 # Deploy
 railway up
-\`\`\`
+```
 
 ---
 
@@ -302,13 +302,13 @@ railway up
 #### Option 1: Docker Compose (Recommended)
 
 1. **Create `.env` file**
-   \`\`\`env
+   ```env
    KV_REST_API_URL=https://your-redis-url.upstash.io
    KV_REST_API_TOKEN=your-token-here
-   \`\`\`
+   ```
 
 2. **Ensure `docker-compose.yml` exists:**
-   \`\`\`yaml
+   ```yaml
    version: '3.8'
    services:
      urlgpt:
@@ -318,19 +318,19 @@ railway up
        env_file:
          - .env
        restart: unless-stopped
-   \`\`\`
+   ```
 
 3. **Build and run**
-   \`\`\`bash
+   ```bash
    docker-compose up -d --build
-   \`\`\`
+   ```
 
 4. **Access the app**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 #### Option 2: Docker CLI
 
-\`\`\`bash
+```bash
 # Build the image
 docker build -t urlgpt .
 
@@ -341,11 +341,11 @@ docker run -d \
   -e KV_REST_API_TOKEN=your-token-here \
   --name urlgpt \
   urlgpt
-\`\`\`
+```
 
 #### Dockerfile
 
-\`\`\`dockerfile
+```dockerfile
 FROM node:18-alpine AS base
 
 FROM base AS deps
@@ -372,7 +372,7 @@ USER nextjs
 EXPOSE 3000
 ENV PORT 3000
 CMD ["node", "server.js"]
-\`\`\`
+```
 
 ---
 
@@ -395,7 +395,7 @@ CMD ["node", "server.js"]
 
 #### App Spec (app.yaml)
 
-\`\`\`yaml
+```yaml
 name: urlgpt
 services:
   - name: web
@@ -414,7 +414,7 @@ services:
       - key: KV_REST_API_TOKEN
         scope: RUN_TIME
         type: SECRET
-\`\`\`
+```
 
 ---
 
@@ -427,7 +427,7 @@ services:
 3. Select **"GitHub"** and authorize access
 4. Choose your repository and branch
 5. Configure build settings (auto-detected for Next.js):
-   \`\`\`yaml
+   ```yaml
    version: 1
    frontend:
      phases:
@@ -444,7 +444,7 @@ services:
      cache:
        paths:
          - node_modules/**/*
-   \`\`\`
+   ```
 6. Add environment variables:
    - `KV_REST_API_URL`
    - `KV_REST_API_TOKEN`
@@ -452,7 +452,7 @@ services:
 
 #### CLI Deployment
 
-\`\`\`bash
+```bash
 # Install Amplify CLI
 npm i -g @aws-amplify/cli
 
@@ -467,7 +467,7 @@ amplify add hosting
 
 # Deploy
 amplify publish
-\`\`\`
+```
 
 ---
 
